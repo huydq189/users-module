@@ -1,7 +1,9 @@
-export interface NewUserRequest {
+export declare class User {
+    id: number;
+    email: string;
     firstName: string;
     lastName: string;
-    email: string;
     age: number;
     password: string;
+    salt: string;
 }

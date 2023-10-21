@@ -1,40 +1,34 @@
 import crypto from 'crypto';
 import { inject, injectable } from 'inversify';
 import jwt from 'jsonwebtoken';
-import { In, Repository } from 'typeorm';
-import { AppSettings, ROLES, TOKENS } from '../constants';
+import { Repository } from 'typeorm';
+import { AppSettings, TOKENS } from '../constants';
 import { NewUserRequest, UserViewModel } from '../dtos';
-import { Role, User } from '../entity';
+import { User } from '../entity';
 import { UserFactory } from '../factories/user.factory';
 import { DatabaseService } from './database.service';
 
 @injectable()
 export class UserService {
     userRepository: Repository<User>;
-    roleRepository: Repository<Role>;
 
     constructor(
         @inject(TOKENS.DATABASE_SERVICE) private db: DatabaseService,
         @inject(TOKENS.USER_FACTORY) private userFactory: UserFactory,
     ) {
         this.userRepository = this.db.getRepository<User>(User);
-        this.roleRepository = this.db.getRepository<Role>(User);
     }
 
     async signUp(user: NewUserRequest): Promise<UserViewModel> {
         const { hash, salt } = this.generateHash(user.password);
-        const roles = await this.roleRepository.find({
-            where: {
-                id: In(user.roles),
-            },
-        });
 
-        const dbUser = this.userFactory.buildUser(user, hash, salt, roles);
+        const dbUser = this.userFactory.buildUser(user, hash, salt);
         const savedUser = await this.userRepository.save(dbUser);
         return this.userFactory.buildUserViewModel(savedUser);
     }
 
     async signIn(email: string, newPassword: string): Promise<{ token: string }> {
+        console.log('HUYDEV TEST');
         const { id, password, salt } = await this.userRepository.findOneOrFail({
             where: {
                 email: email,
@@ -47,7 +41,7 @@ export class UserService {
         }
 
         const token = this.generateToken(id);
-
+        console.log('TEST');
         return { token };
     }
 
@@ -56,12 +50,19 @@ export class UserService {
         return users.map(this.userFactory.buildUserViewModel);
     }
 
-    async saveRole(name: ROLES, description: string): Promise<Role> {
-        const role = this.userFactory.buildRole(name, description);
-        const savedRole = await this.roleRepository.save(role);
-        return savedRole;
+    async updateUserEmail(id: number, email: string): Promise<void> {
+        const user = await this.userRepository.findOneBy({ id });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        await this.userRepository.update({ email }, user);
     }
 
+    async deleteUser(email: string): Promise<void> {
+        await this.userRepository.delete({
+            email,
+        });
+    }
     generateHash(password: string, salt?: string): { hash: string; salt: string } {
         const saltLength = 16;
 

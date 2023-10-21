@@ -1,6 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Role } from './role.entity';
-
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
@@ -23,11 +21,4 @@ export class User {
 
     @Column()
     salt!: string;
-
-    @ManyToMany(() => Role, {
-        cascade: true,
-        eager: true,
-    })
-    @JoinTable()
-    roles!: Role[];
 }

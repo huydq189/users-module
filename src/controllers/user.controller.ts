@@ -1,15 +1,14 @@
 import { inject } from 'inversify';
-import { controller, httpGet, httpPost } from 'inversify-express-utils';
+import { controller, httpDelete, httpGet, httpPatch, httpPost } from 'inversify-express-utils';
 import { TOKENS } from '../constants';
 import { CutsomRequest, NewUserRequest, SignInRequest, UserViewModel } from '../dtos';
-import { Role } from '../entity';
 import { UserService } from '../services';
 
 @controller('/auth')
 export class UserController {
     constructor(@inject(TOKENS.USER_SERVICE) private userService: UserService) {}
 
-    @httpGet('/', TOKENS.AUTH_MIDDLEWARE, TOKENS.ADMIN_MIDDLEWARE)
+    @httpGet('/', TOKENS.AUTH_MIDDLEWARE)
     public async getUsers(): Promise<UserViewModel[]> {
         return this.userService.getUsers();
     }
@@ -24,8 +23,13 @@ export class UserController {
         return this.userService.signIn(req.body.email, req.body.password);
     }
 
-    @httpPost('/role')
-    public async saveRole(req: CutsomRequest<Role>): Promise<Role> {
-        return this.userService.saveRole(req.body.name, req.body.description);
+    @httpPatch('/:id')
+    public async updateUser(req: CutsomRequest<SignInRequest>): Promise<any> {
+        return this.userService.updateUserEmail(parseInt(req.params.id), req.body.email);
+    }
+
+    @httpDelete('/')
+    public async deleteUser(req: CutsomRequest<SignInRequest>): Promise<any> {
+        return this.userService.deleteUser(req.body.email);
     }
 }
